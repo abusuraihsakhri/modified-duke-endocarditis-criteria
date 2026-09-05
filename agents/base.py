@@ -57,7 +57,15 @@ class PHIGuard:
 class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
     def __init__(self, secret_key: Optional[str] = None):
-        self.secret_key = (secret_key or os.getenv("AUDIT_SECRET_KEY", "modified-duke-endocarditis-criteria-master-audit-key-2026")).encode("utf-8")
+        key = secret_key or os.getenv("AUDIT_SECRET_KEY")
+        if not key:
+            raise SecurityException(
+                "AUDIT_SECRET_KEY environment variable must be set. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        if len(key) < 16:
+            raise SecurityException("AUDIT_SECRET_KEY must be at least 16 characters long.")
+        self.secret_key = key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
@@ -93,7 +101,18 @@ class AuditTrail:
         return self.logs
 
 
-GLOBAL_AUDIT = AuditTrail()
+try:
+    GLOBAL_AUDIT = AuditTrail()
+except SecurityException:
+    # Fallback for development/testing only - generates ephemeral key
+    import warnings
+    import secrets
+    warnings.warn(
+        "AUDIT_SECRET_KEY not set. Using ephemeral key - audit trail will not persist across restarts. "
+        "Set AUDIT_SECRET_KEY env var in production.",
+        RuntimeWarning
+    )
+    GLOBAL_AUDIT = AuditTrail(secret_key=secrets.token_hex(32))
 
 
 class AuditLogger:

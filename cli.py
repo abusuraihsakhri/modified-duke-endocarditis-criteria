@@ -4,7 +4,9 @@ Command Line Interface for Modified Duke Endocarditis Criteria.
 import argparse
 import csv
 import json
+import os
 import sys
+from pathlib import Path
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
 from agents.base import AuditLogger
@@ -80,7 +82,21 @@ def main(argv=None):
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
+        # Path traversal protection
+        input_path = Path(args.input).resolve()
+        output_path = Path(args.output).resolve()
+        cwd = Path.cwd().resolve()
+        temp_dirs = [Path(os.getenv("TEMP", "/tmp")).resolve(), Path(os.getenv("TMP", "/tmp")).resolve()]
+        for p in [input_path, output_path]:
+            if not str(p).startswith(str(cwd)) and not any(str(p).startswith(str(d)) for d in temp_dirs):
+                print(f"Error: Access denied - path '{p}' is outside the allowed directory", file=sys.stderr)
+                return 1
+
+        if not input_path.exists():
+            print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+            return 1
+
+        with open(input_path, mode="r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
@@ -104,7 +120,7 @@ def main(argv=None):
             row_dict["audit_hash"] = dossier.audit_hash
             out_rows.append(row_dict)
 
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
+        with open(output_path, mode="w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=out_fields)
             writer.writeheader()
             writer.writerows(out_rows)

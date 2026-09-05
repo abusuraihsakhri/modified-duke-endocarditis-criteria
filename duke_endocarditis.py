@@ -12,7 +12,9 @@ import argparse
 import csv
 import json
 import math
+import os
 import sys
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 
@@ -65,8 +67,27 @@ def process_single(args) -> None:
     print(json.dumps(res, indent=2))
 
 
+def _safe_resolve_path(path_str: str) -> Path:
+    """Resolve a path safely, preventing path traversal attacks."""
+    path = Path(path_str).resolve()
+    cwd = Path.cwd().resolve()
+    # Allow paths that are within the current working directory or common temp dirs
+    temp_dirs = [Path(os.getenv("TEMP", "/tmp")).resolve(), Path(os.getenv("TMP", "/tmp")).resolve()]
+    if not str(path).startswith(str(cwd)) and not any(str(path).startswith(str(d)) for d in temp_dirs):
+        raise ValueError(f"Access denied: path '{path}' is outside the allowed directory")
+    return path
+
+
 def process_batch(input_csv: str, output_csv: str) -> None:
-    with open(input_csv, mode="r", encoding="utf-8-sig") as f:
+    input_path = _safe_resolve_path(input_csv)
+    output_path = _safe_resolve_path(output_csv)
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_csv}")
+    if not input_path.is_file():
+        raise ValueError(f"Input path is not a file: {input_csv}")
+
+    with open(input_path, mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         fieldnames = list(reader.fieldnames or [])
         rows = list(reader)
@@ -82,7 +103,7 @@ def process_batch(input_csv: str, output_csv: str) -> None:
         row_dict["clinical_recommendation"] = calc_res["clinical_recommendation"]
         out_rows.append(row_dict)
 
-    with open(output_csv, mode="w", encoding="utf-8", newline="") as f:
+    with open(output_path, mode="w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=out_fields)
         writer.writeheader()
         writer.writerows(out_rows)
