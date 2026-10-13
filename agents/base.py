@@ -93,18 +93,27 @@ class AuditTrail:
     def verify_integrity(self) -> bool:
         for i, entry in enumerate(self.logs):
             prev = self.logs[i-1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
-            if entry["prev_hash"] != prev:
+            try:
+                signing_text = "|".join(str(entry[field]) for field in (
+                    "audit_id", "timestamp", "actor", "actor_tier", "event_type", "payload_hash", "prev_hash"
+                ))
+                expected = hmac.new(self.secret_key, signing_text.encode("utf-8"), hashlib.sha256).hexdigest()
+                if entry["prev_hash"] != prev or not hmac.compare_digest(expected, entry["current_hash"]):
+                    return False
+            except (KeyError, TypeError, ValueError):
                 return False
         return True
 
     def get_trail(self) -> List[Dict[str, Any]]:
-        return self.logs
+        return [dict(entry) for entry in self.logs]
 
 
 try:
     GLOBAL_AUDIT = AuditTrail()
 except SecurityException:
-    # Fallback for development/testing only - generates ephemeral key
+    # Production must provide a configured audit secret; never silently substitute a key.
+    if os.getenv("ENVIRONMENT", "").lower() in ("production", "prod"):
+        raise
     import warnings
     import secrets
     warnings.warn(

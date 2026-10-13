@@ -96,37 +96,39 @@ class TestPHIGuard:
         PHIGuard.assert_no_phi("")
 
 
-class TestCalculateMetricsEdgeCases:
-    """Tests for calculate_metrics edge cases."""
+class TestClinicalCriteriaValidation:
+    """All findings must be explicitly reviewed, and evidence must not be double counted."""
 
-    def test_empty_input(self):
-        result = calculate_metrics()
-        assert result["score"] == 1.0  # default when no numeric values
-        assert result["classification"] == "Low / Standard"
+    def test_requires_explicit_domains(self):
+        with pytest.raises(ValueError, match="missing"):
+            calculate_metrics(major_imaging=True)
 
-    def test_single_value(self):
-        result = calculate_metrics(v1=15.0)
-        assert result["score"] == 15.0
+    def test_rejects_invalid_boolean(self):
+        from duke_endocarditis import FIELDS
+        values = {name: False for name in FIELDS}
+        values["minor_fever"] = "unknown"
+        with pytest.raises(ValueError, match="boolean"):
+            calculate_metrics(**values)
 
-    def test_mixed_types(self):
-        result = calculate_metrics(v1=10.0, name="test", v2=5.0)
-        # Algorithm: score = v1 + v2 * (1/2) = 10 + 2.5 = 12.5
-        assert result["score"] == 12.5
-        assert result["inputs_evaluated"] == 3  # all params counted
+    def test_does_not_double_count_same_evidence(self):
+        from duke_endocarditis import FIELDS
+        values = {name: False for name in FIELDS}
+        values["major_microbiologic"] = True
+        values["minor_microbiologic"] = True
+        with pytest.raises(ValueError, match="both major and minor"):
+            calculate_metrics(**values)
 
-    def test_none_values_ignored(self):
-        result = calculate_metrics(v1=10.0, v2=None)
-        assert result["score"] == 10.0
 
-    def test_string_values_handled(self):
-        result = calculate_metrics(v1="invalid", v2=5.0)
-        assert result["score"] == 5.0  # only v2 is numeric
+class TestAuditIntegrity:
+    def test_modified_signed_field_invalidates_chain(self):
+        trail = AuditTrail(secret_key="test-key-with-at-least-16-characters")
+        trail.log("tester", "test", "TEST_EVENT", {"status": "ok"})
+        assert trail.verify_integrity()
+        trail.logs[0]["actor"] = "tampered"
+        assert not trail.verify_integrity()
 
-    def test_negative_values(self):
-        result = calculate_metrics(v1=-10.0)
-        assert result["score"] == -10.0
-        assert result["classification"] == "Low / Standard"
-
-    def test_zero_values(self):
-        result = calculate_metrics(v1=0.0)
-        assert result["score"] == 0.0
+    def test_read_only_copy(self):
+        trail = AuditTrail(secret_key="test-key-with-at-least-16-characters")
+        trail.log("tester", "test", "TEST_EVENT", {"status": "ok"})
+        trail.get_trail()[0]["actor"] = "tampered"
+        assert trail.verify_integrity()

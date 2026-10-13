@@ -1,236 +1,52 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modified Duke Endocarditis Criteria — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <title>Duke–ISCVID Infective Endocarditis Criteria · 2023</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark;--bg:#0b1220;--panel:#142034;--border:#34435a;--text:#edf4fb;--muted:#b5c6da;--blue:#8dbdff;--green:#77e1bd}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);line-height:1.5}main{max-width:1050px;margin:auto;padding:28px 20px 65px}h1{font-size:clamp(1.5rem,4vw,2.25rem);line-height:1.25;margin:.4rem 0}h2{font-size:1.14rem;margin:0 0 12px}p{margin:.6rem 0}a{color:var(--blue)}.muted,.sub{color:var(--muted)}.lead{max-width:72ch}.eyebrow{color:var(--green);font-size:.83rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}.banner{padding:14px 18px;border:1px solid #876b36;background:#2e271b;border-radius:9px;margin:20px 0}.layout{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}.stack{display:grid;gap:16px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px}.panel p.sub{font-size:.88rem}.option{display:flex;gap:12px;align-items:start;padding:9px 0;border-top:1px solid #2b3b51;cursor:pointer}.option:first-of-type{border-top:0}.option input{flex:none;margin-top:5px;accent-color:#8dbdff;width:18px;height:18px}.option span{display:block}.option small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}button{border-radius:7px;border:1px solid var(--border);background:#2c405d;color:var(--text);padding:11px 16px;font:inherit;font-weight:600;cursor:pointer}button.primary{background:#8dbdff;color:#071423;border-color:#8dbdff}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #ffd166;outline-offset:3px}.result{border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px;min-height:90px}.result strong{font-size:1.22rem}.result.definite{border-color:#e7a967}.result.possible{border-color:#8dbdff}.result.rejected{border-color:#77e1bd}.result.error{border-color:#ff8181}.result.empty{color:var(--muted)}.rules{padding-left:21px}.rules li{margin:.5rem 0}footer{font-size:.86rem;color:var(--muted);margin-top:26px}footer a{overflow-wrap:anywhere}@media(max-width:760px){.layout{grid-template-columns:1fr}main{padding:22px 14px 45px}.panel{padding:16px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  </style>
 </head>
-<body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Modified Duke Endocarditis Criteria</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
-        </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Modified Duke Endocarditis Criteria Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "modified-duke-endocarditis-criteria",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
-</body>
-</html>
+<body><main>
+  <div class="eyebrow">Clinical criteria reference tool · 2023 Duke–ISCVID</div>
+  <h1>Infective endocarditis classification</h1>
+  <p class="lead muted">Classify <strong>already assessed</strong> evidence as Definite, Possible, or Rejected IE using the 2023 Duke–ISCVID combinations. One criterion per domain; findings are not inferred from free text or numerical scores.</p>
+  <div class="banner" role="note"><strong>Clinical-use limitation:</strong> This educational aid is not clinically validated software and does not establish or exclude a diagnosis. A negative classification with incomplete investigations does not rule out endocarditis. Confirm the actual definitions in the source criteria and seek specialist clinical assessment.</div>
+  <div class="layout">
+    <form id="criteria-form" class="stack">
+      <section class="panel"><h2>Pathologic evidence</h2><p class="sub">Definite IE when the specified microorganism or active endocarditis is documented in qualifying tissue/material.</p>
+        <label class="option"><input type="checkbox" name="definite_pathologic"><span>Pathologic criterion for definite IE fulfilled<small>Qualifying tissue/microorganism finding under the 2023 definitions.</small></span></label>
+      </section>
+      <section class="panel"><h2>Major clinical criteria</h2><p class="sub">Confirm that each selected category satisfies the published definition. Multiple findings within one category count once.</p>
+        <label class="option"><input type="checkbox" name="major_microbiologic"><span>Microbiologic major criterion<small>Qualifying blood-culture combinations or specified molecular/serological evidence.</small></span></label>
+        <label class="option"><input type="checkbox" name="major_imaging"><span>Imaging major criterion<small>Qualifying echo/CT findings or FDG-PET/CT evidence under the relevant timing rules.</small></span></label>
+        <label class="option"><input type="checkbox" name="major_surgical"><span>Surgical major criterion<small>Direct operative evidence only where major imaging and subsequent definitive confirmation are absent.</small></span></label>
+      </section>
+      <section class="panel"><h2>Minor clinical criteria</h2><p class="sub">Seven domains. Do not count the same microbiologic or imaging finding as both major and minor.</p>
+        <label class="option"><input type="checkbox" name="minor_predisposition"><span>Predisposition<small>Examples: previous IE, prosthetic valve/CIED, specified heart disease, injection drug use.</small></span></label>
+        <label class="option"><input type="checkbox" name="minor_fever"><span>Documented fever greater than 38.0°C</span></label>
+        <label class="option"><input type="checkbox" name="minor_vascular"><span>Vascular phenomena<small>Examples: arterial emboli, septic pulmonary infarcts, Janeway lesions, mycotic aneurysm.</small></span></label>
+        <label class="option"><input type="checkbox" name="minor_immunologic"><span>Immunologic phenomena<small>Examples: Osler nodes, Roth spots, rheumatoid factor, immune-complex GN.</small></span></label>
+        <label class="option"><input type="checkbox" name="minor_microbiologic"><span>Microbiologic evidence below major threshold</span></label>
+        <label class="option"><input type="checkbox" name="minor_imaging"><span>Early prosthetic-material FDG-PET/CT minor criterion<small>Qualifying abnormal uptake within 3 months of implantation.</small></span></label>
+        <label class="option"><input type="checkbox" name="minor_physical"><span>New regurgitation on examination<small>Only if echocardiography is unavailable; changed pre-existing murmur does not count.</small></span></label>
+      </section>
+      <section class="panel"><h2>Explicit rejection criteria</h2><p class="sub">Require the published supporting conditions; these may override clinical count combinations.</p>
+        <label class="option"><input type="checkbox" name="reject_alternative"><span>Firm alternative diagnosis explaining the findings</span></label>
+        <label class="option"><input type="checkbox" name="reject_short_therapy"><span>No recurrence despite antibiotic therapy for fewer than 4 days</span></label>
+        <label class="option"><input type="checkbox" name="reject_negative_surgery"><span>No pathologic or macroscopic IE at surgery/autopsy with fewer than 4 days of antibiotics</span></label>
+      </section>
+      <section class="panel"><label class="option"><input type="checkbox" id="reviewed"><span><strong>I have reviewed all 14 criterion domains</strong><small>Unchecked criteria represent an explicit assessment that the relevant definition is not met, not an unknown finding.</small></span></label><div class="actions"><button type="submit" class="primary">Classify evidence</button><button type="reset">Reset</button></div></section>
+    </form>
+    <aside class="stack">
+      <section class="panel"><h2>Assessment</h2><div id="result" class="result empty" role="status" aria-live="polite">No assessment yet. Review the evidence, confirm completion, and select Classify.</div><div class="actions"><button type="button" id="download" disabled>Export JSON</button></div><p class="sub">All calculations run in your browser. The page does not upload, store, or transmit criterion selections. Do not enter identifiable patient data.</p></section>
+      <section class="panel"><h2>Decision combinations</h2><ul class="rules"><li><strong>Definite:</strong> pathologic evidence, or 2 major, or 1 major + 3 minor, or 5 minor.</li><li><strong>Possible:</strong> 1 major + 1 minor, or 3 minor.</li><li><strong>Rejected:</strong> an explicit rejection criterion, or failure to satisfy Possible criteria after complete assessment.</li></ul><p class="sub">The domain definitions (including when blood culture, molecular results, imaging and surgery qualify) must be applied before checking boxes.</p></section>
+      <section class="panel"><h2>Primary reference</h2><p>Fowler VG Jr et al. <em>Clinical Infectious Diseases</em>. 2023;77(4):518–526.</p><p><a href="https://doi.org/10.1093/cid/ciad271" target="_blank" rel="noopener noreferrer">Read 2023 Duke–ISCVID criteria ↗</a></p><p class="sub">The original 2000 Modified Duke criteria differ from these updated definitions.</p></section>
+    </aside>
+  </div>
+  <footer>Local, static educational implementation · no backend or account required · <a href="https://github.com/abusuraihsakhri/modified-duke-endocarditis-criteria">Source repository</a></footer>
+</main><script type="module" src="./app.mjs"></script></body></html>

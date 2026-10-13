@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Modified Duke Endocarditis Criteria API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
+    "description": "2023 Duke-ISCVID criterion-domain classifier with experimental legacy audit endpoints; not a clinical diagnosis.",
+    "version": "1.0.0",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
       "url": "https://github.com/abusuraihsakhri"
@@ -22,7 +22,7 @@
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "Legacy operational counters (JSON)",
         "responses": {
           "200": {
             "description": "Prometheus text metrics"
@@ -32,7 +32,7 @@
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
+        "summary": "Legacy experimental worker audit, unrelated to Duke classification",
         "requestBody": {
           "content": {
             "application/json": {
@@ -76,7 +76,7 @@
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Legacy mock supervisor response; not medical guidance",
         "requestBody": {
           "content": {
             "application/json": {
@@ -107,6 +107,91 @@
         "responses": {
           "200": {
             "description": "Cryptographic audit trail"
+          }
+        }
+      }
+    },
+    "/api/classify": {
+      "post": {
+        "summary": "Classify already-adjudicated 2023 Duke-ISCVID evidence",
+        "description": "Requires all 14 boolean criterion domains. Does not interpret raw clinical data.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "definite_pathologic": {
+                    "type": "boolean"
+                  },
+                  "reject_alternative": {
+                    "type": "boolean"
+                  },
+                  "reject_short_therapy": {
+                    "type": "boolean"
+                  },
+                  "reject_negative_surgery": {
+                    "type": "boolean"
+                  },
+                  "major_microbiologic": {
+                    "type": "boolean"
+                  },
+                  "major_imaging": {
+                    "type": "boolean"
+                  },
+                  "major_surgical": {
+                    "type": "boolean"
+                  },
+                  "minor_predisposition": {
+                    "type": "boolean"
+                  },
+                  "minor_fever": {
+                    "type": "boolean"
+                  },
+                  "minor_vascular": {
+                    "type": "boolean"
+                  },
+                  "minor_immunologic": {
+                    "type": "boolean"
+                  },
+                  "minor_microbiologic": {
+                    "type": "boolean"
+                  },
+                  "minor_imaging": {
+                    "type": "boolean"
+                  },
+                  "minor_physical": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "definite_pathologic",
+                  "reject_alternative",
+                  "reject_short_therapy",
+                  "reject_negative_surgery",
+                  "major_microbiologic",
+                  "major_imaging",
+                  "major_surgical",
+                  "minor_predisposition",
+                  "minor_fever",
+                  "minor_vascular",
+                  "minor_immunologic",
+                  "minor_microbiologic",
+                  "minor_imaging",
+                  "minor_physical"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Definite, Possible, or Rejected with counts and basis"
+          },
+          "422": {
+            "description": "Invalid or conflicting criterion domains"
           }
         }
       }
