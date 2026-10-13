@@ -1,139 +1,172 @@
 #!/usr/bin/env python3
-"""
-Modified Duke Criteria for Infective Endocarditis
-Classifies Definite, Possible, or Rejected Infective Endocarditis from major and minor criteria.
+"""2023 Duke-ISCVID infective endocarditis clinical-criteria classifier.
 
-Zero-dependency Python implementation with single and batch evaluation.
-Author: Dr. Abu Suraih Sakhri
-License: MIT
+Criteria must be assessed by a qualified clinician. This module only combines
+already-adjudicated categorical findings; it does not interpret raw tests.
+Reference: Fowler et al., Clin Infect Dis 2023;77:518-526.
+https://doi.org/10.1093/cid/ciad271
 """
 
 import argparse
 import csv
 import json
-import math
 import os
-import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict
+
+VERSION = "2023 Duke-ISCVID"
+MAJOR = ("major_microbiologic", "major_imaging", "major_surgical")
+MINOR = ("minor_predisposition", "minor_fever", "minor_vascular",
+         "minor_immunologic", "minor_microbiologic", "minor_imaging",
+         "minor_physical")
+OTHER = ("definite_pathologic", "reject_alternative", "reject_short_therapy",
+         "reject_negative_surgery")
+FIELDS = OTHER + MAJOR + MINOR
+REJECTIONS = ("reject_alternative", "reject_short_therapy", "reject_negative_surgery")
 
 
-def calculate_metrics(**kwargs) -> Dict[str, Any]:
+def _boolean(value: Any, field: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in ("true", "yes", "1"):
+            return True
+        if normalized in ("false", "no", "0"):
+            return False
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    raise ValueError(f"{field} must be a boolean (true/false, yes/no, or 1/0)")
+
+
+def calculate_metrics(**kwargs: Any) -> Dict[str, Any]:
+    """Classify an adjudicated case under the 2023 Duke-ISCVID rules.
+
+    All 14 flags are required to avoid treating unreviewed criteria as absent.
+    Exactly one checkbox per criterion domain contributes at most one point.
     """
-    Core domain algorithm for modified-duke-endocarditis-criteria.
-    """
-    params = {}
-    for k, v in kwargs.items():
-        if v is not None:
-            try:
-                params[k] = float(v)
-            except (ValueError, TypeError):
-                params[k] = str(v)
+    missing = [field for field in FIELDS if field not in kwargs]
+    extra = sorted(set(kwargs) - set(FIELDS))
+    if missing or extra:
+        raise ValueError(f"Invalid criteria fields; missing={missing}, unknown={extra}")
+    selected = {field: _boolean(kwargs[field], field) for field in FIELDS}
+    if selected["major_microbiologic"] and selected["minor_microbiologic"]:
+        raise ValueError("The same microbiologic evidence cannot count as both major and minor")
+    if selected["major_imaging"] and selected["minor_imaging"]:
+        raise ValueError("Imaging evidence cannot be counted as both major and minor")
+    if selected["major_surgical"] and selected["major_imaging"]:
+        raise ValueError("Surgical major criterion applies only if major imaging is unavailable")
+    if selected["major_surgical"] and selected["definite_pathologic"]:
+        raise ValueError("Surgical major criterion requires absence of pathologic confirmation")
+    if selected["definite_pathologic"] and any(selected[r] for r in REJECTIONS):
+        raise ValueError("Pathologically definite IE conflicts with a rejection criterion")
 
-    # Deterministic domain logic
-    numeric_vals = [val for val in params.values() if isinstance(val, (int, float))]
-    primary_val = numeric_vals[0] if numeric_vals else 1.0
-
-    score = primary_val
-    for idx, nv in enumerate(numeric_vals[1:], start=2):
-        score += nv * (1.0 / idx)
-
-    rounded_score = round(score, 2)
-    
-    # Classification / tiering
-    if rounded_score < 10.0:
-        tier = "Low / Standard"
-        action = "Standard monitoring or negative cutoff"
-    elif rounded_score < 25.0:
-        tier = "Moderate / Intermediate"
-        action = "Close observation or secondary evaluation"
+    major_count = sum(selected[field] for field in MAJOR)
+    minor_count = sum(selected[field] for field in MINOR)
+    rejected_reason = next((r for r in REJECTIONS if selected[r]), None)
+    if rejected_reason:
+        classification = "Rejected"
+        basis = rejected_reason
+    elif selected["definite_pathologic"]:
+        classification = "Definite"
+        basis = "pathologic criterion"
+    elif major_count >= 2:
+        classification = "Definite"
+        basis = "at least 2 major criteria"
+    elif major_count >= 1 and minor_count >= 3:
+        classification = "Definite"
+        basis = "at least 1 major and 3 minor criteria"
+    elif minor_count >= 5:
+        classification = "Definite"
+        basis = "at least 5 minor criteria"
+    elif major_count >= 1 and minor_count >= 1:
+        classification = "Possible"
+        basis = "at least 1 major and 1 minor criterion"
+    elif minor_count >= 3:
+        classification = "Possible"
+        basis = "at least 3 minor criteria"
     else:
-        tier = "High / Severe"
-        action = "Urgent clinical intervention or primary positive finding"
-
+        classification = "Rejected"
+        basis = "does not meet criteria for possible IE"
     return {
-        "tool": "modified-duke-endocarditis-criteria",
-        "score": rounded_score,
-        "classification": tier,
-        "clinical_recommendation": action,
-        "inputs_evaluated": len(params),
+        "criteria_version": VERSION,
+        "classification": classification,
+        "basis": basis,
+        "major_count": major_count,
+        "minor_count": minor_count,
+        "note": "Criteria classification only; incomplete evaluation must not be used to rule out IE.",
     }
 
 
-def process_single(args) -> None:
-    kwargs = vars(args)
-    kwargs.pop("func", None)
-    res = calculate_metrics(**kwargs)
-    print(json.dumps(res, indent=2))
-
-
 def _safe_resolve_path(path_str: str) -> Path:
-    """Resolve a path safely, preventing path traversal attacks."""
+    """Constrain CLI file operations to CWD or a configured system temp dir."""
     path = Path(path_str).resolve()
-    cwd = Path.cwd().resolve()
-    # Allow paths that are within the current working directory or common temp dirs
-    temp_dirs = [Path(os.getenv("TEMP", "/tmp")).resolve(), Path(os.getenv("TMP", "/tmp")).resolve()]
-    if not str(path).startswith(str(cwd)) and not any(str(path).startswith(str(d)) for d in temp_dirs):
+    roots = [Path.cwd().resolve(), Path(os.getenv("TMPDIR") or os.getenv("TEMP") or "/tmp").resolve()]
+    if not any(path.is_relative_to(root) for root in roots):
         raise ValueError(f"Access denied: path '{path}' is outside the allowed directory")
     return path
 
 
-def process_batch(input_csv: str, output_csv: str) -> None:
-    input_path = _safe_resolve_path(input_csv)
-    output_path = _safe_resolve_path(output_csv)
+def _csv_safe(value: str) -> str:
+    """Prevent spreadsheet formula execution in exported free-text fields."""
+    return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
 
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found: {input_csv}")
-    if not input_path.is_file():
-        raise ValueError(f"Input path is not a file: {input_csv}")
 
-    with open(input_path, mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        fieldnames = list(reader.fieldnames or [])
-        rows = list(reader)
-
-    out_fields = fieldnames + ["score", "classification", "clinical_recommendation"]
-    out_rows = []
-
-    for r in rows:
-        calc_res = calculate_metrics(**r)
-        row_dict = dict(r)
-        row_dict["score"] = calc_res["score"]
-        row_dict["classification"] = calc_res["classification"]
-        row_dict["clinical_recommendation"] = calc_res["clinical_recommendation"]
-        out_rows.append(row_dict)
-
-    with open(output_path, mode="w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=out_fields)
+def process_batch(input_csv: str, output_csv: str) -> int:
+    source = _safe_resolve_path(input_csv)
+    destination = _safe_resolve_path(output_csv)
+    if source == destination:
+        raise ValueError("Input and output files must differ")
+    if not source.exists():
+        raise FileNotFoundError(f"Input CSV does not exist: {source}")
+    if not source.is_file():
+        raise ValueError(f"Input path is not a file: {source}")
+    if source.stat().st_size > 5_000_000:
+        raise ValueError("CSV exceeds the 5 MB size limit")
+    with source.open("r", encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        headers = reader.fieldnames or []
+        if len(headers) != len(set(headers)):
+            raise ValueError("Duplicate CSV headers")
+        missing = [field for field in FIELDS if field not in headers]
+        if missing:
+            raise ValueError(f"Missing CSV columns: {', '.join(missing)}")
+        if any(h in headers for h in ("classification", "basis", "major_count", "minor_count", "criteria_version", "note")):
+            raise ValueError("CSV contains reserved output columns")
+        rows = []
+        for line, record in enumerate(reader, 2):
+            if line > 10001:
+                raise ValueError("CSV exceeds the 10,000-row limit")
+            if None in record or any(val is None for val in record.values()):
+                raise ValueError(f"Malformed CSV at row {line}")
+            try:
+                result = calculate_metrics(**{f: record[f] for f in FIELDS})
+            except ValueError as exc:
+                raise ValueError(f"Row {line}: {exc}") from exc
+            rows.append({**{k: _csv_safe(v) for k, v in record.items()}, **result})
+    with destination.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=headers + ["criteria_version", "classification", "basis", "major_count", "minor_count", "note"])
         writer.writeheader()
-        writer.writerows(out_rows)
+        writer.writerows(rows)
+    return len(rows)
 
-    print(f"Processed {len(out_rows)} records -> {output_csv}")
 
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Modified Duke Criteria for Infective Endocarditis")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # Single parser
-    single_parser = subparsers.add_parser("single", help="Evaluate single case")
-    single_parser.add_argument("--v1", type=float, default=10.0, help="Primary parameter")
-    single_parser.add_argument("--v2", type=float, default=5.0, help="Secondary parameter")
-    single_parser.add_argument("--v3", type=float, default=2.0, help="Tertiary parameter")
-    single_parser.set_defaults(func=process_single)
-
-    # Batch parser
-    batch_parser = subparsers.add_parser("batch", help="Process batch CSV")
-    batch_parser.add_argument("-i", "--input", required=True, help="Input CSV")
-    batch_parser.add_argument("-o", "--output", default="results.csv", help="Output CSV")
-
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="2023 Duke-ISCVID criteria classifier (not diagnostic advice)")
+    sub = parser.add_subparsers(dest="command", required=True)
+    single = sub.add_parser("single", help="Evaluate a case after reviewing all criterion domains")
+    for field in FIELDS:
+        single.add_argument("--" + field.replace("_", "-"), action="store_true", help=field.replace("_", " "))
+    batch = sub.add_parser("batch", help="Classify CSV cases with all 14 boolean criterion columns")
+    batch.add_argument("-i", "--input", required=True)
+    batch.add_argument("-o", "--output", default="results.csv")
     args = parser.parse_args(argv)
-
     if args.command == "single":
-        args.func(args)
-    elif args.command == "batch":
-        process_batch(args.input, args.output)
+        print(json.dumps(calculate_metrics(**{f: getattr(args, f) for f in FIELDS}), indent=2))
+    else:
+        print(f"Processed {process_batch(args.input, args.output)} records -> {args.output}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

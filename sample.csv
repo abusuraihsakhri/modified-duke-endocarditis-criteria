@@ -1,4 +1,4 @@
-Patient_ID,v1,v2,v3
-PT-101,14.5,4.2,1.8
-PT-102,8.0,2.1,0.5
-PT-103,28.4,12.0,5.5
+Case_ID,definite_pathologic,reject_alternative,reject_short_therapy,reject_negative_surgery,major_microbiologic,major_imaging,major_surgical,minor_predisposition,minor_fever,minor_vascular,minor_immunologic,minor_microbiologic,minor_imaging,minor_physical
+DEMO-01,false,false,false,false,true,true,false,false,false,false,false,false,false,false
+DEMO-02,false,false,false,false,false,false,false,true,true,true,false,false,false,false
+DEMO-03,false,false,false,false,false,false,false,false,false,false,false,false,false,false
